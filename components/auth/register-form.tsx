@@ -17,13 +17,13 @@ import {
 import { Button } from "@/components/ui/button";
 import { FormError } from "@/components/form-error";
 import { FormSuccess } from "@/components/form-success";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { register } from "@/actions/register";
 
 export const RegisterForm = () => {
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof RegisterSchema>>({
     resolver: zodResolver(RegisterSchema),
@@ -34,15 +34,19 @@ export const RegisterForm = () => {
     },
   });
 
-  const onSubmit = (value: z.infer<typeof RegisterSchema>) => {
+  const onSubmit = async (value: z.infer<typeof RegisterSchema>) => {
     setError("");
     setSuccess("");
-    startTransition(() => {
-      register(value).then((data) => {
-        setError(data.error);
-        setSuccess(data.success);
-      });
-    });
+    setIsSubmitting(true);
+    try {
+      const data = await register(value);
+      setError(data.error);
+      setSuccess(data.success);
+    } catch (error) {
+      setError("An unexpected error occurred");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,7 +69,7 @@ export const RegisterForm = () => {
                     <Input
                       {...field}
                       placeholder="rooney bae"
-                      disabled={isPending}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -83,7 +87,7 @@ export const RegisterForm = () => {
                       {...field}
                       placeholder="rooney@example.com"
                       type="email"
-                      disabled={isPending}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -101,7 +105,7 @@ export const RegisterForm = () => {
                       {...field}
                       placeholder="******"
                       type="password"
-                      disabled={isPending}
+                      disabled={isSubmitting}
                     />
                   </FormControl>
                   <FormMessage />
@@ -110,7 +114,7 @@ export const RegisterForm = () => {
             />
             <FormError message={error} />
             <FormSuccess message={success} />
-            <Button type="submit" className="w-full" disabled={isPending}>
+            <Button type="submit" className="w-full" disabled={isSubmitting}>
               Login
             </Button>
           </div>
